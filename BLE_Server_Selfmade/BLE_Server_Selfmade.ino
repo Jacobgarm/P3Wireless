@@ -25,7 +25,7 @@ BLECharacteristic* pCharacteristic =
   pService->createCharacteristic(characteristicUUID, BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE);
 
 // Set characteristic value
-pCharacteristic->setValue("Hello World!");
+pCharacteristic->setValue("Tsiamnd");
 
 // Start Service
 pService->start();
@@ -38,7 +38,7 @@ pAdvertising->setMinPreferred(0x12);
 pAdvertising->start();
 
 }
-Serial.println("Device is now available to the IoT");
+//Serial.println("Device is now available to the IoT");
 void loop() {
   // put your main code here, to run repeatedly:
 

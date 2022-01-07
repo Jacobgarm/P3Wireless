@@ -1,5 +1,3 @@
-
-
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLEUtils.h>
@@ -7,17 +5,19 @@
 
 //Default Temperature is in Celsius
 //Comment the next line for Temperature in Fahrenheit
-#define Vardi
+#define temperatureCelsius
 
 //BLE server name
-#define bleServerName "BME280_ESP32"
+#define bleServerName "STEEN_ESP32"
 
-float Vardital;
 
+
+float temp=1;
+float hum=2;
 
 // Timer variables
 unsigned long lastTime = 0;
-unsigned long timerDelay = 30000;
+unsigned long timerDelay = 3000;
 
 bool deviceConnected = false;
 
@@ -26,13 +26,13 @@ bool deviceConnected = false;
 #define SERVICE_UUID "91bad492-b950-4226-aa2b-4ede9fa42f59"
 
 // Temperature Characteristic and Descriptor
+  BLECharacteristic bmeTemperatureCelsiusCharacteristics("cba1d466-344c-4be3-ab3f-189f80dd7518", BLECharacteristic::PROPERTY_NOTIFY);
+  BLEDescriptor bmeTemperatureCelsiusDescriptor(BLEUUID((uint16_t)0x2902));
 
-  /*BLECharacteristic bmeVardiCharacteristics("cba1d466-344c-4be3-ab3f-189f80dd7518", BLECharacteristic::PROPERTY_NOTIFY);
-  BLEDescriptor bmeVardiDescriptor(BLEUUID((uint16_t)0x2902));*/
 
 // Humidity Characteristic and Descriptor
-BLECharacteristic bmeVardiCharacteristics("ca73b3ba-39f6-4ab3-91ae-186dc9577d99", BLECharacteristic::PROPERTY_NOTIFY);
-BLEDescriptor bmeVardiDescriptor(BLEUUID((uint16_t)0x2903));
+BLECharacteristic bmeHumidityCharacteristics("ca73b3ba-39f6-4ab3-91ae-186dc9577d99", BLECharacteristic::PROPERTY_NOTIFY);
+BLEDescriptor bmeHumidityDescriptor(BLEUUID((uint16_t)0x2903));
 
 //Setup callbacks onConnect and onDisconnect
 class MyServerCallbacks: public BLEServerCallbacks {
@@ -55,9 +55,6 @@ void setup() {
   // Start serial communication 
   Serial.begin(115200);
 
-  // Init BME Sensor
-  /*initBME():   */
-
   // Create the BLE Device
   BLEDevice::init(bleServerName);
 
@@ -70,15 +67,15 @@ void setup() {
 
   // Create BLE Characteristics and Create a BLE Descriptor
   // Temperature
-  /*#ifdef temperatureCelsius
     bmeService->addCharacteristic(&bmeTemperatureCelsiusCharacteristics);
     bmeTemperatureCelsiusDescriptor.setValue("BME temperature Celsius");
-    bmeTemperatureCelsiusCharacteristics.addDescriptor(&bmeTemperatureCelsiusDescriptor);*/
+    bmeTemperatureCelsiusCharacteristics.addDescriptor(&bmeTemperatureCelsiusDescriptor);
+ 
 
   // Humidity
-  bmeService->addCharacteristic(&bmeVardiCharacteristics);
-  bmeVardiDescriptor.setValue("BME vardi");
-  bmeVardiCharacteristics.addDescriptor(new BLE2902());
+  bmeService->addCharacteristic(&bmeHumidityCharacteristics);
+  bmeHumidityDescriptor.setValue("BME humidity");
+  bmeHumidityCharacteristics.addDescriptor(new BLE2902());
   
   // Start the service
   bmeService->start();
@@ -92,12 +89,14 @@ void setup() {
 
 void loop() {
   if (deviceConnected) {
-    
-   
-        Vardital++;
+    if ((millis() - lastTime) > timerDelay) {
+      // Read temperature as Celsius (the default)
+      temp++;
+
+      // Read humidity
+      hum++;
   
       //Notify temperature reading from BME sensor
-      /*#ifdef temperatureCelsius
         static char temperatureCTemp[6];
         dtostrf(temp, 6, 2, temperatureCTemp);
         //Set temperature Characteristic value and notify connected client
@@ -106,27 +105,19 @@ void loop() {
         Serial.print("Temperature Celsius: ");
         Serial.print(temp);
         Serial.print(" ºC");
-      #else
-        static char temperatureFTemp[6];
-        dtostrf(tempF, 6, 2, temperatureFTemp);
-        //Set temperature Characteristic value and notify connected client
-        bmeTemperatureFahrenheitCharacteristics.setValue(temperatureFTemp);
-        bmeTemperatureFahrenheitCharacteristics.notify();
-        Serial.print("Temperature Fahrenheit: ");
-        Serial.print(tempF);
-        Serial.print(" ºF");
-      #endif*/
+
       
       //Notify humidity reading from BME
-      /*static char humidityTemp[6];
-      dtostrf(hum, 6, 2, humidityTemp);*/
+      static char humidityTemp[6];
+      dtostrf(hum, 6, 2, humidityTemp);
       //Set humidity Characteristic value and notify connected client
-      bmeVardiCharacteristics.setValue(Vardital);
-      bmeVardiCharacteristics.notify();   
+      bmeHumidityCharacteristics.setValue(humidityTemp);
+      bmeHumidityCharacteristics.notify();   
       Serial.print(" - Humidity: ");
-      Serial.print(Vardital);
+      Serial.print(hum);
       Serial.println(" %");
-
-      delay(1000);
+      
+      lastTime = millis();
+    }
   }
 }

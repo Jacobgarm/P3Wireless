@@ -10,7 +10,7 @@ uint8_t value = 0;  //the set value function only accepts unsigned 8 bit integer
 
 /* Define our custom characteristic along with it's properties */
 BLECharacteristic customCharacteristic(
-  BLEUUID((uint16_t)0x1A00), 
+  BLEUUID("d282db32-f956-4e72-8758-1dd1ecbb8d49"), 
   BLECharacteristic::PROPERTY_READ | 
   BLECharacteristic::PROPERTY_NOTIFY
 );

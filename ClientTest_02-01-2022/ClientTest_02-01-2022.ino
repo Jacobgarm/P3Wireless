@@ -8,17 +8,24 @@
 #include "BLEDevice.h"
 
 
+//Default Temperature is in Celsius
+//Comment the next line for Temperature in Fahrenheit
+#define temperatureCelsius
+
 //BLE Server name (the other ESP32 name running the server sketch)
-#define bleServerName "BME280_ESP32"
+#define bleServerName "STEEN_ESP32"
 
 /* UUID's of the service, characteristic that we want to read*/
 // BLE Service
 static BLEUUID bmeServiceUUID("91bad492-b950-4226-aa2b-4ede9fa42f59");
 
-//static BLEUUID temperatureCharacteristicUUID("cba1d466-344c-4be3-ab3f-189f80dd7518");
+// BLE Characteristics
+  //Temperature Celsius Characteristic
+  static BLEUUID temperatureCharacteristicUUID("cba1d466-344c-4be3-ab3f-189f80dd7518");
+
 
 // Humidity Characteristic
-static BLEUUID vardiCharacteristicUUID("ca73b3ba-39f6-4ab3-91ae-186dc9577d99");
+static BLEUUID humidityCharacteristicUUID("ca73b3ba-39f6-4ab3-91ae-186dc9577d99");
 
 //Flags stating if should begin connecting and if the connection is up
 static boolean doConnect = false;
@@ -28,20 +35,21 @@ static boolean connected = false;
 static BLEAddress *pServerAddress;
  
 //Characteristicd that we want to read
-//static BLERemoteCharacteristic* temperatureCharacteristic;
-static BLERemoteCharacteristic* vardiCharacteristic;
+static BLERemoteCharacteristic* temperatureCharacteristic;
+static BLERemoteCharacteristic* humidityCharacteristic;
 
 //Activate notify
 const uint8_t notificationOn[] = {0x1, 0x0};
 const uint8_t notificationOff[] = {0x0, 0x0};
 
+
 //Variables to store temperature and humidity
-//char* temperatureChar;
-char* vardiChar;
+char* temperatureChar;
+char* humidityChar;
 
 //Flags to check whether new temperature and humidity readings are available
-//boolean newTemperature = false;
-boolean newVardi = false;
+boolean newTemperature = false;
+boolean newHumidity = false;
 
 //Connect to the BLE Server that has the name, Service, and Characteristics
 bool connectToServer(BLEAddress pAddress) {
@@ -60,18 +68,18 @@ bool connectToServer(BLEAddress pAddress) {
   }
  
   // Obtain a reference to the characteristics in the service of the remote BLE server.
-  //temperatureCharacteristic = pRemoteService->getCharacteristic(temperatureCharacteristicUUID);
-  vardiCharacteristic = pRemoteService->getCharacteristic(vardiCharacteristicUUID);
+  temperatureCharacteristic = pRemoteService->getCharacteristic(temperatureCharacteristicUUID);
+  humidityCharacteristic = pRemoteService->getCharacteristic(humidityCharacteristicUUID);
 
-  if (vardiCharacteristic == nullptr) {
+  if (temperatureCharacteristic == nullptr || humidityCharacteristic == nullptr) {
     Serial.print("Failed to find our characteristic UUID");
-    return (false);
+    return false;
   }
   Serial.println(" - Found our characteristics");
  
   //Assign callback functions for the Characteristics
-  //temperatureCharacteristic->registerForNotify(temperatureNotifyCallback);
-  vardiCharacteristic->registerForNotify(vardiNotifyCallback);
+  temperatureCharacteristic->registerForNotify(temperatureNotifyCallback);
+  humidityCharacteristic->registerForNotify(humidityNotifyCallback);
   return true;
 }
 
@@ -88,29 +96,39 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
 };
  
 //When the BLE Server sends a new temperature reading with the notify property
-/*static void temperatureNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, 
-                                        uint8_t* pData, size_t length, bool isNotify) {
+static void temperatureNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, 
+    uint8_t* pData, size_t length, bool isNotify) {
   //store temperature value
   temperatureChar = (char*)pData;
   newTemperature = true;
-}*/
+}
 
 //When the BLE Server sends a new humidity reading with the notify property
-static void vardiNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, 
-                                    uint8_t* pData, size_t length, bool isNotify) {
+static void humidityNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, 
+     uint8_t* pData, size_t length, bool isNotify) {
   //store humidity value
-  vardiChar = (char*)pData;
-  newVardi = true;
-  Serial.print(newVardi);
+  humidityChar = (char*)pData;
+  newHumidity = true;
+  //Serial.print(newHumidity);
 }
 
 //function that prints the latest sensor readings in the OLED display
 void printReadings(){
-  //Serial.println(temperatureChar);
-  Serial.println(vardiChar);
+  
+  Serial.print("Temperature:");
+  Serial.print(temperatureChar);
+    //Temperature Celsius
+    Serial.print("C");
+
+
+  //display humidity 
+  Serial.print(" Humidity:");
+  Serial.print(humidityChar); 
+  Serial.println("%");
 }
 
 void setup() {
+  
   //Start serial communication
   Serial.begin(9600);
   Serial.println("Starting Arduino BLE Client application...");
@@ -135,8 +153,8 @@ void loop() {
     if (connectToServer(*pServerAddress)) {
       Serial.println("We are now connected to the BLE Server.");
       //Activate the Notify property of each Characteristic
-      //temperatureCharacteristic->getDescriptor(BLEUUID((uint16_t)0x2902))->writeValue((uint8_t*)notificationOn, 2, true);
-      vardiCharacteristic->getDescriptor(BLEUUID((uint16_t)0x2902))->writeValue((uint8_t*)notificationOn, 2, true);
+      temperatureCharacteristic->getDescriptor(BLEUUID((uint16_t)0x2902))->writeValue((uint8_t*)notificationOn, 2, true);
+      humidityCharacteristic->getDescriptor(BLEUUID((uint16_t)0x2902))->writeValue((uint8_t*)notificationOn, 2, true);
       connected = true;
     } else {
       Serial.println("We have failed to connect to the server; Restart your device to scan for nearby BLE server again.");
@@ -144,9 +162,9 @@ void loop() {
     doConnect = false;
   }
   //if new temperature readings are available, print in the OLED
-  if (/*newTemperature &&*/ newVardi){
-    //newTemperature = false;
-    newVardi = false;
+  if (newTemperature && newHumidity){
+    newTemperature = false;
+    newHumidity = false;
     printReadings();
   }
   delay(1000); // Delay a second between loops.

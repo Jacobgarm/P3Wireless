@@ -20,24 +20,24 @@ unsigned long timerDelay = 3000;
 bool deviceConnected = false;
 
 //BLE server name
-#define bleServerName "GRP5_ESP3_SERVER2"
+#define bleServerName "GRP5_ESP32_SERVER"
 
-// See the following for generating UUIDs:
+// See the following for generating UUIDs (version 1):
 // https://www.uuidgenerator.net/
-#define SERVICE_UUID "d1c7319c-6fbd-11ec-90d6-0242ac120003"
+#define SERVICE_UUID "26cac62c-71f3-11ec-90d6-0242ac120003"
 
 // Temperature Characteristic and Descriptor
-BLECharacteristic bmeTemperatureCelsiusCharacteristics("cba1d466-344c-4be3-ab3f-189f80dd7518", BLECharacteristic::PROPERTY_NOTIFY);
+BLECharacteristic bmeTemperatureCelsiusCharacteristics("3ba9eadc-71f3-11ec-90d6-0242ac120003", BLECharacteristic::PROPERTY_NOTIFY);
 BLEDescriptor bmeTemperatureCelsiusDescriptor(BLEUUID((uint16_t)0x2902));
 
 
 // Humidity Characteristic and Descriptor
-BLECharacteristic bmeHumidityCharacteristics("ca73b3ba-39f6-4ab3-91ae-186dc9577d99", BLECharacteristic::PROPERTY_NOTIFY);
+BLECharacteristic bmeHumidityCharacteristics("453ec176-71f3-11ec-90d6-0242ac120003", BLECharacteristic::PROPERTY_NOTIFY);
 BLEDescriptor bmeHumidityDescriptor(BLEUUID((uint16_t)0x2903));
 
 // Air Quality Characteristic and Descriptor
-BLECharacteristic bmeAirqualityCharacteristics("5eda95c2-6fc0-11ec-90d6-0242ac120003", BLECharacteristic::PROPERTY_NOTIFY);
-BLEDescriptor bmeAirqualityDescriptor(BLEUUID((uint16_t)0x2903));
+BLECharacteristic bmeAirqualityCharacteristics("6b033c20-71f3-11ec-90d6-0242ac120003", BLECharacteristic::PROPERTY_NOTIFY);
+BLEDescriptor bmeAirqualityDescriptor(BLEUUID((uint16_t)0x2901));
 
 //Setup callbacks onConnect and onDisconnect
 class MyServerCallbacks: public BLEServerCallbacks {

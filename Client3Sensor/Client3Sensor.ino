@@ -4,13 +4,13 @@
 *********/
 
 #include <BLEDevice.h>
-#include <LiquidCrystal.h>
-#include <SD.h>
+//#include <LiquidCrystal.h>
+//#include <SD.h>
 
 //BLE Server name (the other ESP32 name running the server sketch)
 #define bleServerName "GRP5_ESP32_SERVER"
 
-#define SERVICE_UUID "d1c7319c-6fbd-11ec-90d6-0242ac120003"
+#define SERVICE_UUID "26cac62c-71f3-11ec-90d6-0242ac120003"
 
 /* UUID's of the service, characteristic that we want to read*/
 // BLE Service
@@ -18,13 +18,13 @@ static BLEUUID bmeServiceUUID(SERVICE_UUID);
 
 // BLE Characteristics
 //Temperature Celsius Characteristic
-static BLEUUID temperatureCharacteristicUUID("cba1d466-344c-4be3-ab3f-189f80dd7518");
+static BLEUUID temperatureCharacteristicUUID("3ba9eadc-71f3-11ec-90d6-0242ac120003");
 
 // Humidity Characteristic
-static BLEUUID humidityCharacteristicUUID("ca73b3ba-39f6-4ab3-91ae-186dc9577d99");
+static BLEUUID humidityCharacteristicUUID("453ec176-71f3-11ec-90d6-0242ac120003");
 
 // Air Quality Characteristic
-static BLEUUID airqualityCharacteristicUUID("5eda95c2-6fc0-11ec-90d6-0242ac120003");
+static BLEUUID airqualityCharacteristicUUID("6b033c20-71f3-11ec-90d6-0242ac120003");
 
 //Flags stating if should begin connecting and if the connection is up
 static boolean doConnect = false;
@@ -83,7 +83,7 @@ bool connectToServer(BLEAddress pAddress) {
   //Assign callback functions for the Characteristics
   temperatureCharacteristic->registerForNotify(temperatureNotifyCallback);
   humidityCharacteristic->registerForNotify(humidityNotifyCallback);
-  airqualityCharacteristic->registerForNotify(humidityNotifyCallback);
+  airqualityCharacteristic->registerForNotify(airqualityNotifyCallback);
   return true;
 }
 
@@ -115,7 +115,7 @@ static void humidityNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteri
   newHumidity = true;
 }
 
-//When the BLE Server sends a new humidity reading with the notify property
+//When the BLE Server sends a new aiqual reading with the notify property
 static void airqualityNotifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, 
      uint8_t* pData, size_t length, bool isNotify) {
   //store humidity value
@@ -150,8 +150,6 @@ void setup() {
   Serial.println("Starting Arduino BLE Client application...");
 
   //Init BLE device
-
-  Serial.println("Connected");
   BLEDevice::init("");
  
   // Retrieve a Scanner and set the callback we want to use to be informed when we

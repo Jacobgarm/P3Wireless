@@ -4,13 +4,82 @@
 *********/
 
 #include <BLEDevice.h>
-//#include <LiquidCrystal.h>
+#include <LiquidCrystal.h>
 //#include <SD.h>
 
+//Variables to store temperature and humidity
+char* temperatureChar;
+char* humidityChar;
+char* airqualityChar;
+
+//Buttons
+int buttonPins[] = {12, 13, 14, 15,7};
+unsigned long buttonInterval = 500;
+unsigned long lastPressed[] = {0, 0, 0, 0, 0};
+
+//Loggging
+bool loggingEnabled = true;
+unsigned long loggingInterval = 10000;
+unsigned long lastLogged = 0;
+
+//Audio
+bool isMuted = false;
+
+//LCD Display
+const int rs = 0, en = 16, d4 = 17, d5 = 5, d6 = 18, d7 = 19;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+
+static void switchMute() {
+  isMuted = !isMuted;
+  lcd.clear();
+  lcd.setCursor(0,1);
+  if (isMuted)
+    lcd.print("Audio is now muted!");
+  else
+    lcd.print("Audio is no longer muted!");
+}
+
+static void switchLogging() {
+  loggingEnabled = !loggingEnabled;
+  lcd.clear();
+  lcd.setCursor(0,1);
+  if (isMuted)
+    lcd.print("Logging is now enabled!");
+  else
+    lcd.print("Logging is now disabled!");
+}
+
+static void displaySensorData(String datatype) {
+  lcd.clear();
+  lcd.setCursor(0,1);
+  if (datatype == "temp") {
+    lcd.print("The temperature is:");
+    lcd.setCursor(0,2);
+    lcd.print(" " + String(temperatureChar) + " C"); 
+  }
+  else if (datatype == "hum") {
+    lcd.print("The humidity is:");
+    lcd.setCursor(0,2);
+    lcd.print(" " + String(humidityChar) + "%"); 
+  }
+  else if (datatype == "aq") {
+    lcd.print("The airqualtiy is:");
+    lcd.setCursor(0,2);
+    lcd.print(" " + String(airqualityChar) + " units"); 
+  }
+  
+}
+
+//Bluetooth
 //BLE Server name (the other ESP32 name running the server sketch)
 #define bleServerName "GRP5_ESP32_SERVER"
 
+//UUID's (version 1)
 #define SERVICE_UUID "26cac62c-71f3-11ec-90d6-0242ac120003"
+#define TEMPERATURE_UUID "3ba9eadc-71f3-11ec-90d6-0242ac120003"
+#define HUMIDITY_UUID "453ec176-71f3-11ec-90d6-0242ac120003"
+#define AIRQUALITY_UUID "6b033c20-71f3-11ec-90d6-0242ac120003"
+
 
 /* UUID's of the service, characteristic that we want to read*/
 // BLE Service
@@ -18,13 +87,13 @@ static BLEUUID bmeServiceUUID(SERVICE_UUID);
 
 // BLE Characteristics
 //Temperature Celsius Characteristic
-static BLEUUID temperatureCharacteristicUUID("3ba9eadc-71f3-11ec-90d6-0242ac120003");
+static BLEUUID temperatureCharacteristicUUID(TEMPERATURE_UUID);
 
 // Humidity Characteristic
-static BLEUUID humidityCharacteristicUUID("453ec176-71f3-11ec-90d6-0242ac120003");
+static BLEUUID humidityCharacteristicUUID(HUMIDITY_UUID);
 
 // Air Quality Characteristic
-static BLEUUID airqualityCharacteristicUUID("6b033c20-71f3-11ec-90d6-0242ac120003");
+static BLEUUID airqualityCharacteristicUUID(AIRQUALITY_UUID);
 
 //Flags stating if should begin connecting and if the connection is up
 static boolean doConnect = false;
@@ -43,10 +112,6 @@ const uint8_t notificationOn[] = {0x1, 0x0};
 const uint8_t notificationOff[] = {0x0, 0x0};
 
 
-//Variables to store temperature and humidity
-char* temperatureChar;
-char* humidityChar;
-char* airqualityChar;
 
 //Flags to check whether new temperature and humidity readings are available
 boolean newTemperature = false;
@@ -144,9 +209,14 @@ void printReadings(){
 }
 
 void setup() {
-  
   //Start serial communication
   Serial.begin(9600);
+  for (int i = 0; i < 5; i++)
+    pinMode(buttonPins[i], INPUT);
+
+  // set up the LCD's number of columns and rows:
+  lcd.begin(20, 4);
+  
   Serial.println("Starting Arduino BLE Client application...");
 
   //Init BLE device
@@ -185,5 +255,29 @@ void loop() {
     newAirquality = false;
     printReadings();
   }
-  delay(1000); // Delay a second between loops.
+
+  if (loggingEnabled && millis() - lastLogged > loggingInterval) {
+      //Log the data
+      
+      lastLogged = millis();
+  }
+
+  for (int i = 0; i < 5; i++) {
+    if (millis() - lastPressed[i] > buttonInterval && analogRead(buttonPins[i]) > 512) {
+        lastPressed[i] = millis();
+        if (i == 0)
+          displaySensorData("temp");
+        else if (i == 1)
+          displaySensorData("hum");
+        else if (i == 2)
+          displaySensorData("aq");
+        else if (i == 3)
+          switchLogging();
+        else if (i == 4)
+          switchMute();
+      }
+  }
+
+  
+  delay(10); // Delay a second between loops.
 }

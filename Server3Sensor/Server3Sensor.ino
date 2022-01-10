@@ -9,34 +9,46 @@
 #include <BLE2902.h>
 #include <DHT.h>
 
-float temp=1;
-float hum=2;
-float aq=3;
+//Sensorer
+#define DHTPIN 4
+#define DHTTYPE DHT22   // DHT 22  (AM2302)
+
+DHT dht(DHTPIN, DHTTYPE);
+int R_0 = 945;
+
+#define MQPIN 14
+
+float temp=13;
+float hum=15;
+float aq=17;
 
 // Timer variables
 unsigned long lastTime = 0;
 unsigned long timerDelay = 3000;
 
+//Bluetooth
 bool deviceConnected = false;
 
 //BLE server name
 #define bleServerName "GRP5_ESP32_SERVER"
 
-// See the following for generating UUIDs (version 1):
-// https://www.uuidgenerator.net/
+//UUID's (version 1)
 #define SERVICE_UUID "26cac62c-71f3-11ec-90d6-0242ac120003"
+#define TEMPERATURE_UUID "3ba9eadc-71f3-11ec-90d6-0242ac120003"
+#define HUMIDITY_UUID "453ec176-71f3-11ec-90d6-0242ac120003"
+#define AIRQUALITY_UUID "6b033c20-71f3-11ec-90d6-0242ac120003"
 
 // Temperature Characteristic and Descriptor
-BLECharacteristic bmeTemperatureCelsiusCharacteristics("3ba9eadc-71f3-11ec-90d6-0242ac120003", BLECharacteristic::PROPERTY_NOTIFY);
+BLECharacteristic bmeTemperatureCelsiusCharacteristics(TEMPERATURE_UUID, BLECharacteristic::PROPERTY_NOTIFY);
 BLEDescriptor bmeTemperatureCelsiusDescriptor(BLEUUID((uint16_t)0x2902));
 
 
 // Humidity Characteristic and Descriptor
-BLECharacteristic bmeHumidityCharacteristics("453ec176-71f3-11ec-90d6-0242ac120003", BLECharacteristic::PROPERTY_NOTIFY);
+BLECharacteristic bmeHumidityCharacteristics(HUMIDITY_UUID, BLECharacteristic::PROPERTY_NOTIFY);
 BLEDescriptor bmeHumidityDescriptor(BLEUUID((uint16_t)0x2903));
 
 // Air Quality Characteristic and Descriptor
-BLECharacteristic bmeAirqualityCharacteristics("6b033c20-71f3-11ec-90d6-0242ac120003", BLECharacteristic::PROPERTY_NOTIFY);
+BLECharacteristic bmeAirqualityCharacteristics(AIRQUALITY_UUID, BLECharacteristic::PROPERTY_NOTIFY);
 BLEDescriptor bmeAirqualityDescriptor(BLEUUID((uint16_t)0x2901));
 
 //Setup callbacks onConnect and onDisconnect
@@ -52,6 +64,9 @@ class MyServerCallbacks: public BLEServerCallbacks {
 void setup() {
   // Start serial communication 
   Serial.begin(115200);
+
+  //Start the DHT22
+  dht.begin();
 
   // Create the BLE Device
   BLEDevice::init(bleServerName);
@@ -94,13 +109,13 @@ void loop() {
   if (deviceConnected) {
     if ((millis() - lastTime) > timerDelay) {
       // Read temperature as Celsius
-      temp++;
+      temp = dht.readTemperature();
 
       // Read humidity
-      hum++;
+      hum = dht.readHumidity();
 
       // Read air quality
-      aq ++;
+      aq = analogRead(MQPIN);
   
       //Notify temperature reading from BME sensor
       static char temperatureCTemp[6];

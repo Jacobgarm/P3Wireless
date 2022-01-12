@@ -5,7 +5,9 @@
 
 #include <BLEDevice.h>
 #include <LiquidCrystal.h>
-//#include <SD.h>
+#include <SD.h>
+#include <FS.h>
+#include <SPI.h>
 
 //Variables to store temperature and humidity
 char* temperatureChar;
@@ -21,6 +23,7 @@ unsigned long lastPressed[] = {0, 0, 0, 0, 0};
 bool loggingEnabled = true;
 unsigned long loggingInterval = 10000;
 unsigned long lastLogged = 0;
+const char* loggingPath = "/data.csv";
 
 //Audio
 bool isMuted = false;
@@ -67,7 +70,23 @@ static void displaySensorData(String datatype) {
     lcd.setCursor(0,2);
     lcd.print(" " + String(airqualityChar) + " units"); 
   }
-  
+}
+
+void logData(){
+  Serial.printf("Logging to file: %s\n", loggingPath);
+
+  File file = SD.open(loggingPath, FILE_APPEND);
+  if(!file){
+    Serial.println("Failed to open file for logging");
+    return;
+  }
+  String message = String(temperatureChar) + ", " + String(humidityChar) + ", " + String(airqualityChar);
+  if(file.print(message)){
+      Serial.println("Data logged");
+  } else {
+    Serial.println("Logging failed");
+  }
+  file.close();
 }
 
 //Bluetooth
@@ -254,11 +273,12 @@ void loop() {
     newHumidity = false;
     newAirquality = false;
     printReadings();
+    displayData("all");
   }
-
+  
   if (loggingEnabled && millis() - lastLogged > loggingInterval) {
       //Log the data
-      
+      logData();
       lastLogged = millis();
   }
 

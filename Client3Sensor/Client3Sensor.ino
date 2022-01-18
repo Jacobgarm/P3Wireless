@@ -18,6 +18,7 @@ char* airqualityChar;
 int buttonPins[] = {12, 13, 14, 15,7};
 unsigned long buttonInterval = 500;
 unsigned long lastPressed[] = {0, 0, 0, 0, 0};
+int lastValues[] = {0,0,0,0,0};
 
 //Loggging
 bool loggingEnabled = true;
@@ -29,8 +30,9 @@ const char* loggingPath = "/data.csv";
 bool isMuted = false;
 
 //LCD Display
-const int rs = 0, en = 16, d4 = 17, d5 = 5, d6 = 18, d7 = 19;
+const int rs = 13, en = 12, d4 = 14, d5 = 27, d6 = 33, d7 = 32;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+String screenState = "booting";
 
 static void switchMute() {
   isMuted = !isMuted;
@@ -40,6 +42,7 @@ static void switchMute() {
     lcd.print("Audio is now muted!");
   else
     lcd.print("Audio is no longer muted!");
+  screenState = "mute";
 }
 
 static void switchLogging() {
@@ -50,6 +53,7 @@ static void switchLogging() {
     lcd.print("Logging is now enabled!");
   else
     lcd.print("Logging is now disabled!");
+  screenState = "log";
 }
 
 static void displaySensorData(String datatype) {
@@ -70,6 +74,26 @@ static void displaySensorData(String datatype) {
     lcd.setCursor(0,2);
     lcd.print(" " + String(airqualityChar) + " units"); 
   }
+  screenState = "singledata";
+}
+
+void displayDefault() {
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Sensor data base");
+  lcd.setCursor(0,1);
+  lcd.print("Press to see data");
+  lcd.setCursor(0,2);
+  if (loggingEnabled)
+    lcd.print("Logging is enabled");
+  else
+    lcd.print("Logging is disabled");
+  lcd.setCursor(0,2);
+  if (isMuted)
+    lcd.print("Speaker is muted");
+  else
+    lcd.print("Speaker is not muted");
+  screenState = "default";  
 }
 
 void logData(){
@@ -80,7 +104,7 @@ void logData(){
     Serial.println("Failed to open file for logging");
     return;
   }
-  String message = String(temperatureChar) + ", " + String(humidityChar) + ", " + String(airqualityChar);
+  String message = String(millis()) + "," + String(temperatureChar) + "," + String(humidityChar) + "," + String(airqualityChar) + "\n";
   if(file.print(message)){
       Serial.println("Data logged");
   } else {
@@ -235,6 +259,22 @@ void setup() {
 
   // set up the LCD's number of columns and rows:
   lcd.begin(20, 4);
+  lcd.cursor();
+  lcd.noBlink();
+  lcd.setCursor(0,1);
+  lcd.print("Booting up...");
+
+  if(!SD.begin(5)){
+    Serial.println("Card Mount Failed. Logging disabled");
+    loggingEnabled = false;
+  }
+
+  uint8_t cardType = SD.cardType();
+
+  if(cardType == CARD_NONE){
+    Serial.println("No SD card attached. Logging disabled");
+   loggingEnabled = false;
+  }
   
   Serial.println("Starting Arduino BLE Client application...");
 
@@ -262,6 +302,7 @@ void loop() {
       humidityCharacteristic->getDescriptor(BLEUUID((uint16_t)0x2902))->writeValue((uint8_t*)notificationOn, 2, true);
       airqualityCharacteristic->getDescriptor(BLEUUID((uint16_t)0x2902))->writeValue((uint8_t*)notificationOn, 2, true);
       connected = true;
+      displayDefault();
     } else {
       Serial.println("We have failed to connect to the server; Restart your device to scan for nearby BLE server again.");
     }
@@ -273,7 +314,6 @@ void loop() {
     newHumidity = false;
     newAirquality = false;
     printReadings();
-    displayData("all");
   }
   
   if (loggingEnabled && millis() - lastLogged > loggingInterval) {
@@ -281,9 +321,21 @@ void loop() {
       logData();
       lastLogged = millis();
   }
-
+  if (screenState != "default") {
+    bool isInactive = true;
+    for (int i = 0; i < 5; i++) {
+      if (millis() - lastPressed[i] < 5000) {
+        isInactive = false;
+        break;
+          
+      }
+    }
+    if (isInactive)
+      displayDefault();
+  }
   for (int i = 0; i < 5; i++) {
-    if (millis() - lastPressed[i] > buttonInterval && analogRead(buttonPins[i]) > 512) {
+    int val = analogRead(buttonPins[i]);
+    if (millis() - lastPressed[i] > buttonInterval && val > 512 && lastValues[i] <= 512) {
         lastPressed[i] = millis();
         if (i == 0)
           displaySensorData("temp");
@@ -296,8 +348,9 @@ void loop() {
         else if (i == 4)
           switchMute();
       }
+      lastValues[i] = val;
   }
 
   
-  delay(10); // Delay a second between loops.
+  delay(10); // Delay 10 milliseconds between loops.
 }

@@ -26,6 +26,14 @@ unsigned long loggingInterval = 10000;
 unsigned long lastLogged = 0;
 const char* loggingPath = "/data.csv";
 
+//Alarm Thresholds
+float maxT = 25;
+float minT = 15;
+float maxH = 80;
+float minH = 15;
+float maxAQ = 800;
+float minAQ = 400;
+
 //Audio
 bool isMuted = false;
 
@@ -34,7 +42,7 @@ const int rs = 13, en = 12, d4 = 14, d5 = 27, d6 = 33, d7 = 32;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 String screenState = "booting";
 
-static void switchMute() {
+void switchMute() {
   isMuted = !isMuted;
   lcd.clear();
   lcd.setCursor(0,1);
@@ -45,7 +53,7 @@ static void switchMute() {
   screenState = "mute";
 }
 
-static void switchLogging() {
+void switchLogging() {
   loggingEnabled = !loggingEnabled;
   lcd.clear();
   lcd.setCursor(0,1);
@@ -56,7 +64,7 @@ static void switchLogging() {
   screenState = "log";
 }
 
-static void displaySensorData(String datatype) {
+void displaySensorData(String datatype) {
   lcd.clear();
   lcd.setCursor(0,1);
   if (datatype == "temp") {
@@ -111,6 +119,10 @@ void logData(){
     Serial.println("Logging failed");
   }
   file.close();
+}
+
+void soundAlarm() {
+  
 }
 
 //Bluetooth
@@ -308,19 +320,28 @@ void loop() {
     }
     doConnect = false;
   }
-  //if new temperature readings are available, print in the OLED
+
+  //if new temperature readings are available, write to Serial
   if (newTemperature && newHumidity && newAirquality){
     newTemperature = false;
     newHumidity = false;
     newAirquality = false;
     printReadings();
   }
+
+  if (float(temperatureChar) < minT || float(temperatureChar) > maxT) {
+    soundAlarm();
+    displaySensorData("temp")
+  }
   
+  //if logging is enabled and waiting is over, log data
   if (loggingEnabled && millis() - lastLogged > loggingInterval) {
       //Log the data
       logData();
       lastLogged = millis();
   }
+
+  //if no buttons have been pressed for 5 seconds, return to default
   if (screenState != "default") {
     bool isInactive = true;
     for (int i = 0; i < 5; i++) {
@@ -333,6 +354,8 @@ void loop() {
     if (isInactive)
       displayDefault();
   }
+
+
   for (int i = 0; i < 5; i++) {
     int val = analogRead(buttonPins[i]);
     if (millis() - lastPressed[i] > buttonInterval && val > 512 && lastValues[i] <= 512) {

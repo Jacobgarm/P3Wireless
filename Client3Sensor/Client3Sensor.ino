@@ -1,6 +1,6 @@
 /********
   Gruppe 5
-  Client med display
+  Client med display, lyd, SD
 *********/
 
 #include <BLEDevice.h>
@@ -9,13 +9,15 @@
 #include <FS.h>
 #include <SPI.h>
 
+unsigned long lastUpdate = 0;
+
 //Variables to store temperature and humidity
 char* temperatureChar;
 char* humidityChar;
 char* airqualityChar;
 
 //Buttons
-int buttonPins[] = {12, 13, 14, 15,7};
+int buttonPins[] = {16, 4, 0, 2,15};
 unsigned long buttonInterval = 500;
 unsigned long lastPressed[] = {0, 0, 0, 0, 0};
 int lastValues[] = {0,0,0,0,0};
@@ -51,6 +53,7 @@ void switchMute() {
   else
     lcd.print("Audio is no longer muted!");
   screenState = "mute";
+  lastUpdate = millis();
 }
 
 void switchLogging() {
@@ -62,6 +65,7 @@ void switchLogging() {
   else
     lcd.print("Logging is now disabled!");
   screenState = "log";
+  lastUpdate = millis()
 }
 
 void displaySensorData(String datatype) {
@@ -83,6 +87,7 @@ void displaySensorData(String datatype) {
     lcd.print(" " + String(airqualityChar) + " units"); 
   }
   screenState = "singledata";
+  lastUpdate = millis();
 }
 
 void displayDefault() {
@@ -101,7 +106,8 @@ void displayDefault() {
     lcd.print("Speaker is muted");
   else
     lcd.print("Speaker is not muted");
-  screenState = "default";  
+  screenState = "default";
+  lastUpdate = millis();
 }
 
 void logData(){
@@ -321,6 +327,9 @@ void loop() {
     doConnect = false;
   }
 
+  if (!connected)
+    return;
+
   //if new temperature readings are available, write to Serial
   if (newTemperature && newHumidity && newAirquality){
     newTemperature = false;
@@ -329,30 +338,32 @@ void loop() {
     printReadings();
   }
 
-  if (float(temperatureChar) < minT || float(temperatureChar) > maxT) {
+  //if values exceed thresholds, activate alarm
+  if (atof(temperatureChar) < minT || atof(temperatureChar) > maxT) {
     soundAlarm();
-    displaySensorData("temp")
+    displaySensorData("temp");
+  }
+
+  if (atof(humidityChar) < minH || atof(humidityChar) > maxH) {
+    soundAlarm();
+    displaySensorData("hum");
+  }
+
+  if (atof(airqualityChar) < minAQ || atof(airqualityChar) > maxAQ) {
+    soundAlarm();
+    displaySensorData("aq");
   }
   
   //if logging is enabled and waiting is over, log data
   if (loggingEnabled && millis() - lastLogged > loggingInterval) {
-      //Log the data
-      logData();
-      lastLogged = millis();
+    //Log the data
+    logData();
+    lastLogged = millis();
   }
 
   //if no buttons have been pressed for 5 seconds, return to default
-  if (screenState != "default") {
-    bool isInactive = true;
-    for (int i = 0; i < 5; i++) {
-      if (millis() - lastPressed[i] < 5000) {
-        isInactive = false;
-        break;
-          
-      }
-    }
-    if (isInactive)
-      displayDefault();
+  if (screenState != "default" && millis() - lastUpdate > 6000) {
+    displayDefault();
   }
 
 

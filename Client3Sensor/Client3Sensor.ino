@@ -8,6 +8,7 @@
 #include <SD.h>
 #include <FS.h>
 #include <SPI.h>
+#include <XT_DAC_Audio.h>
 
 unsigned long lastUpdate = 0;
 
@@ -16,9 +17,13 @@ char* temperatureChar;
 char* humidityChar;
 char* airqualityChar;
 
+String temperatureStr = "111";
+String humidityStr = "222";
+String airqualityStr = "333";
+
 //Buttons
-int buttonPins[] = {16, 4, 0, 2,15};
-unsigned long buttonInterval = 500;
+int buttonPins[] = {17, 4, 16, 2,15};
+unsigned long buttonInterval = 1000;
 unsigned long lastPressed[] = {0, 0, 0, 0, 0};
 int lastValues[] = {0,0,0,0,0};
 
@@ -29,30 +34,53 @@ unsigned long lastLogged = 0;
 const char* loggingPath = "/data.csv";
 
 //Alarm Thresholds
-float maxT = 25;
+float maxT = 28;
 float minT = 15;
 float maxH = 80;
 float minH = 15;
-float maxAQ = 800;
-float minAQ = 400;
+float maxAQ = 1400;
+float minAQ = 100;
 
 //Audio
-bool isMuted = false;
+bool alarmOn = true;
+int8_t PROGMEM AlarmNotes[] = {
+  -50,-50,-57,-57,-59,-59,-57,8,
+  -55,-55,-54,-54,-52,-52,-50,8,
+  -127
+};
+int8_t PROGMEM PingNotes[] = {
+  -70,-70,8,-127
+};
+
+XT_DAC_Audio_Class DacAudio(25,0);
+XT_MusicScore_Class AlarmSound(AlarmNotes,156,1);
+XT_MusicScore_Class PingSound(PingNotes,156,1);
 
 //LCD Display
 const int rs = 13, en = 12, d4 = 14, d5 = 27, d6 = 33, d7 = 32;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 String screenState = "booting";
 
-void switchMute() {
-  isMuted = !isMuted;
+void soundAlarm() {
+  DacAudio.Play(&AlarmSound);
+}
+
+void soundPing() {
+  DacAudio.Play(&PingSound);
+}
+
+void switchAlarm() {
+  alarmOn = !alarmOn;
   lcd.clear();
   lcd.setCursor(0,1);
-  if (isMuted)
-    lcd.print("Audio is now muted!");
-  else
-    lcd.print("Audio is no longer muted!");
-  screenState = "mute";
+  if (alarmOn) {
+    lcd.print("Alarm is no longer muted!");
+    soundPing();
+  }
+  else {
+    lcd.print("Alarm is now muted!");
+  }
+  screenState = "alarm";
   lastUpdate = millis();
 }
 
@@ -60,12 +88,12 @@ void switchLogging() {
   loggingEnabled = !loggingEnabled;
   lcd.clear();
   lcd.setCursor(0,1);
-  if (isMuted)
+  if (loggingEnabled)
     lcd.print("Logging is now enabled!");
   else
     lcd.print("Logging is now disabled!");
   screenState = "log";
-  lastUpdate = millis()
+  lastUpdate = millis();
 }
 
 void displaySensorData(String datatype) {
@@ -74,17 +102,17 @@ void displaySensorData(String datatype) {
   if (datatype == "temp") {
     lcd.print("The temperature is:");
     lcd.setCursor(0,2);
-    lcd.print(" " + String(temperatureChar) + " C"); 
+    lcd.print(" " + temperatureStr + " C"); 
   }
   else if (datatype == "hum") {
     lcd.print("The humidity is:");
     lcd.setCursor(0,2);
-    lcd.print(" " + String(humidityChar) + "%"); 
+    lcd.print(" " + humidityStr + "%"); 
   }
   else if (datatype == "aq") {
     lcd.print("The airqualtiy is:");
     lcd.setCursor(0,2);
-    lcd.print(" " + String(airqualityChar) + " units"); 
+    lcd.print(" " + airqualityStr + " units"); 
   }
   screenState = "singledata";
   lastUpdate = millis();
@@ -101,11 +129,11 @@ void displayDefault() {
     lcd.print("Logging is enabled");
   else
     lcd.print("Logging is disabled");
-  lcd.setCursor(0,2);
-  if (isMuted)
-    lcd.print("Speaker is muted");
+  lcd.setCursor(0,3);
+  if (alarmOn)
+    lcd.print("Alarm is not muted");
   else
-    lcd.print("Speaker is not muted");
+    lcd.print("Alarm is muted");
   screenState = "default";
   lastUpdate = millis();
 }
@@ -118,7 +146,7 @@ void logData(){
     Serial.println("Failed to open file for logging");
     return;
   }
-  String message = String(millis()) + "," + String(temperatureChar) + "," + String(humidityChar) + "," + String(airqualityChar) + "\n";
+  String message = String(millis()) + "," + temperatureStr + "," + humidityStr + "," + airqualityStr + "\n";
   if(file.print(message)){
       Serial.println("Data logged");
   } else {
@@ -127,8 +155,22 @@ void logData(){
   file.close();
 }
 
-void soundAlarm() {
-  
+void playAudio(char* name) {
+    Serial.printf("Playing audio: %s\n", name);
+    File file = SD.open("Lyd/" + String(name) + ".wav");
+    Serial.println("File opened");
+    int len = file.size();
+    byte bytes[len] = "";
+    file.read(bytes, len);
+    //for (int i = 0; i < len; i++) {
+    //   bytis[i] = file.read();
+    //}
+    Serial.println("Array filled");
+    XT_Wav_Class sound(bytes);
+    Serial.println("Class made");   
+    DacAudio.Play(&sound);
+    file.close();
+    
 }
 
 //Bluetooth
@@ -255,18 +297,23 @@ void printReadings(){
   //print temperature to serial
   Serial.print("Temperature:");
   Serial.print(temperatureChar);
-  Serial.print("C");
+  Serial.print(" ->");
+  Serial.print(temperatureStr); 
+  Serial.print(" C");
 
 
   //print humdidity to serial
   Serial.print(" Humidity:");
   Serial.print(humidityChar); 
+  Serial.print(" ->"); 
   Serial.print("%");
 
   //print airquality to serial
   Serial.print(" Air Quality:");
   Serial.print(airqualityChar); 
-  Serial.println(" ");
+  Serial.print(" ->"); 
+  Serial.print(airqualityStr); 
+  Serial.println(" units");
 }
 
 void setup() {
@@ -330,28 +377,35 @@ void loop() {
   if (!connected)
     return;
 
+  DacAudio.FillBuffer();
+  
   //if new temperature readings are available, write to Serial
   if (newTemperature && newHumidity && newAirquality){
     newTemperature = false;
     newHumidity = false;
     newAirquality = false;
+    temperatureStr = String(temperatureChar).substring(0,6);
+    humidityStr = String(humidityChar).substring(0,6);
+    airqualityStr = String(airqualityChar).substring(0,6);
     printReadings();
-  }
 
-  //if values exceed thresholds, activate alarm
-  if (atof(temperatureChar) < minT || atof(temperatureChar) > maxT) {
-    soundAlarm();
-    displaySensorData("temp");
-  }
-
-  if (atof(humidityChar) < minH || atof(humidityChar) > maxH) {
-    soundAlarm();
-    displaySensorData("hum");
-  }
-
-  if (atof(airqualityChar) < minAQ || atof(airqualityChar) > maxAQ) {
-    soundAlarm();
-    displaySensorData("aq");
+    //if values exceed thresholds, activate alarm
+    if (alarmOn) {
+      if (atof(temperatureChar) < minT || atof(temperatureChar) > maxT) {
+        soundAlarm();
+        displaySensorData("temp");
+      }
+    
+      if (atof(humidityChar) < minH || atof(humidityChar) > maxH) {
+        soundAlarm();
+        displaySensorData("hum");
+      }
+    
+      if (atof(airqualityChar) < minAQ || atof(airqualityChar) > maxAQ) {
+        soundAlarm();
+        displaySensorData("aq");
+      }
+    }
   }
   
   //if logging is enabled and waiting is over, log data
@@ -362,14 +416,16 @@ void loop() {
   }
 
   //if no buttons have been pressed for 5 seconds, return to default
-  if (screenState != "default" && millis() - lastUpdate > 6000) {
+  if (screenState != "default" && millis() - lastUpdate > 4000) {
     displayDefault();
   }
 
 
   for (int i = 0; i < 5; i++) {
-    int val = analogRead(buttonPins[i]);
-    if (millis() - lastPressed[i] > buttonInterval && val > 512 && lastValues[i] <= 512) {
+    int val = digitalRead(buttonPins[i]);
+    Serial.print(val);
+    Serial.print(" ");
+    if (millis() - lastPressed[i] > buttonInterval && val == true && lastValues[i] == 1) {
         lastPressed[i] = millis();
         if (i == 0)
           displaySensorData("temp");
@@ -380,11 +436,9 @@ void loop() {
         else if (i == 3)
           switchLogging();
         else if (i == 4)
-          switchMute();
+          switchAlarm();
       }
       lastValues[i] = val;
   }
-
-  
-  delay(10); // Delay 10 milliseconds between loops.
+  Serial.println();
 }

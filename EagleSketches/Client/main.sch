@@ -3323,6 +3323,7 @@ Puhs-Push type.
 <part name="VR2" library="SparkFun-Resistors" deviceset="POTENTIOMETER_SLIDE" device="-60MM-1/2W-20%" value="10k"/>
 <part name="BT1" library="SparkFun-Batteries" deviceset="BATTERY" device="-9V"/>
 <part name="J1" library="SparkFun-Connectors" deviceset="MICRO-SD" device="-PUSH-PUSH-EXT-PIN"/>
+<part name="C3" library="SparkFun-Capacitors" deviceset="0.1UF" device="-KIT-EZ-50V-20%" value="0.1uF"/>
 </parts>
 <sheets>
 <sheet>
@@ -3404,9 +3405,9 @@ Puhs-Push type.
 <attribute name="NAME" x="-15.24" y="120.142" size="1.778" layer="95" font="vector"/>
 <attribute name="VALUE" x="-15.24" y="106.68" size="1.778" layer="95" font="vector"/>
 </instance>
-<instance part="VR2" gate="G$1" x="-45.72" y="111.76" smashed="yes" rot="R270">
-<attribute name="NAME" x="-45.974" y="108.712" size="1.778" layer="95" font="vector" rot="R180"/>
-<attribute name="VALUE" x="-45.72" y="113.03" size="1.778" layer="95" font="vector" align="bottom-center"/>
+<instance part="VR2" gate="G$1" x="-48.26" y="111.76" smashed="yes" rot="R270">
+<attribute name="NAME" x="-48.514" y="108.712" size="1.778" layer="95" font="vector" rot="R180"/>
+<attribute name="VALUE" x="-48.26" y="113.03" size="1.778" layer="95" font="vector" align="bottom-center"/>
 </instance>
 <instance part="BT1" gate="G$1" x="-43.18" y="134.62" smashed="yes">
 <attribute name="NAME" x="-43.18" y="138.938" size="1.778" layer="95" font="vector" align="bottom-center"/>
@@ -3415,6 +3416,10 @@ Puhs-Push type.
 <instance part="J1" gate="J1" x="-83.82" y="99.06" smashed="yes" rot="MR0">
 <attribute name="NAME" x="-78.74" y="112.268" size="1.778" layer="95" rot="MR0"/>
 <attribute name="VALUE" x="-78.74" y="83.82" size="1.778" layer="96" rot="MR0"/>
+</instance>
+<instance part="C3" gate="G$1" x="-33.02" y="111.76" smashed="yes" rot="R90">
+<attribute name="NAME" x="-35.941" y="113.284" size="1.778" layer="95" font="vector" rot="R90"/>
+<attribute name="VALUE" x="-30.861" y="113.284" size="1.778" layer="96" font="vector" rot="R90"/>
 </instance>
 </instances>
 <busses>
@@ -3473,8 +3478,8 @@ Puhs-Push type.
 </segment>
 <segment>
 <pinref part="VR2" gate="G$1" pin="A"/>
-<wire x1="-53.34" y1="111.76" x2="-55.88" y2="111.76" width="0.1524" layer="91"/>
-<label x="-55.88" y="111.76" size="1.778" layer="95"/>
+<wire x1="-55.88" y1="111.76" x2="-58.42" y2="111.76" width="0.1524" layer="91"/>
+<label x="-58.42" y="111.76" size="1.778" layer="95"/>
 </segment>
 <segment>
 <pinref part="U1" gate="G1" pin="V-"/>
@@ -3691,19 +3696,12 @@ Puhs-Push type.
 <wire x1="15.24" y1="99.06" x2="20.32" y2="99.06" width="0.1524" layer="91"/>
 </segment>
 </net>
-<net name="N$23" class="0">
-<segment>
-<pinref part="VR2" gate="G$1" pin="E"/>
-<pinref part="U1" gate="G1" pin="+IN"/>
-<wire x1="-38.1" y1="111.76" x2="-27.94" y2="111.76" width="0.1524" layer="91"/>
-</segment>
-</net>
 <net name="N$21" class="0">
 <segment>
 <pinref part="VR2" gate="G$1" pin="S"/>
 <wire x1="-35.56" y1="93.98" x2="-35.56" y2="104.14" width="0.1524" layer="91"/>
-<wire x1="-35.56" y1="104.14" x2="-45.72" y2="104.14" width="0.1524" layer="91"/>
-<wire x1="-45.72" y1="104.14" x2="-45.72" y2="106.68" width="0.1524" layer="91"/>
+<wire x1="-35.56" y1="104.14" x2="-48.26" y2="104.14" width="0.1524" layer="91"/>
+<wire x1="-48.26" y1="104.14" x2="-48.26" y2="106.68" width="0.1524" layer="91"/>
 <pinref part="U$2" gate="G$1" pin="IO25"/>
 <wire x1="7.62" y1="66.04" x2="10.16" y2="66.04" width="0.1524" layer="91"/>
 <wire x1="10.16" y1="66.04" x2="10.16" y2="93.98" width="0.1524" layer="91"/>
@@ -3797,6 +3795,20 @@ Puhs-Push type.
 <wire x1="-55.88" y1="99.06" x2="-55.88" y2="68.58" width="0.1524" layer="91"/>
 <pinref part="U$2" gate="G$1" pin="IO19"/>
 <wire x1="-55.88" y1="68.58" x2="-27.94" y2="68.58" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$23" class="0">
+<segment>
+<pinref part="VR2" gate="G$1" pin="E"/>
+<pinref part="C3" gate="G$1" pin="1"/>
+<wire x1="-40.64" y1="111.76" x2="-38.1" y2="111.76" width="0.1524" layer="91"/>
+</segment>
+</net>
+<net name="N$30" class="0">
+<segment>
+<pinref part="C3" gate="G$1" pin="2"/>
+<pinref part="U1" gate="G1" pin="+IN"/>
+<wire x1="-30.48" y1="111.76" x2="-27.94" y2="111.76" width="0.1524" layer="91"/>
 </segment>
 </net>
 </nets>

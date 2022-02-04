@@ -1,6 +1,7 @@
 /********
   Gruppe 5
   Server med sensorer
+  Benytter BLE til at notify clienten om ny data
 *********/
 
 #include <BLEDevice.h>
@@ -18,9 +19,9 @@ int R_0 = 945;
 
 #define MQPIN 14
 
-float temp=13;
-float hum=15;
-float aq=17;
+float temp=20;
+float hum=60;
+float aq=400;
 
 // Timer variables
 unsigned long lastTime = 0;
@@ -117,7 +118,7 @@ void loop() {
       // Read air quality
       aq = analogRead(MQPIN);
   
-      //Notify temperature reading from BME sensor
+      //Notify temperature reading from DHT sensor
       static char temperatureCTemp[6];
       dtostrf(temp, 6, 2, temperatureCTemp);
       //Set temperature Characteristic value and notify connected client
@@ -128,7 +129,7 @@ void loop() {
       Serial.print(" ºC");
 
       
-      //Notify humidity reading from BME
+      //Notify humidity reading from DHT
       static char humidityTemp[6];
       dtostrf(hum, 6, 2, humidityTemp);
       //Set humidity Characteristic value and notify connected client
@@ -136,9 +137,9 @@ void loop() {
       bmeHumidityCharacteristics.notify();   
       Serial.print(" - Humidity: ");
       Serial.print(hum);
-      Serial.println(" %");
+      Serial.print(" %");
 
-      //Notify airquality reading from BME
+      //Notify airquality reading from MQ
       static char airqualityTemp[6];
       dtostrf(aq, 6, 2, airqualityTemp);
       //Set air quality Characteristic value and notify connected client

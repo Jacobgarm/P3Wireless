@@ -1,6 +1,7 @@
 /********
   Gruppe 5
-  Client med display, lyd, SD
+  Client med display, lyd og SD
+  Benytter BLE til at modtager data fra serveren
 *********/
 
 #include <BLEDevice.h>
@@ -22,7 +23,7 @@ String humidityStr = "222";
 String airqualityStr = "333";
 
 //Buttons
-int buttonPins[] = {17, 4, 16, 2,15};
+int buttonPins[] = {16, 4, 17, 2,15};
 unsigned long buttonInterval = 1000;
 unsigned long lastPressed[] = {0, 0, 0, 0, 0};
 int lastValues[] = {0,0,0,0,0};
@@ -38,7 +39,7 @@ float maxT = 28;
 float minT = 15;
 float maxH = 80;
 float minH = 15;
-float maxAQ = 1400;
+float maxAQ = 1600;
 float minAQ = 100;
 
 //Audio
@@ -73,13 +74,14 @@ void switchAlarm() {
   alarmOn = !alarmOn;
   lcd.clear();
   lcd.setCursor(0,1);
+  lcd.print("Alarm is now");
+  lcd.setCursor(0,2);
   if (alarmOn) {
-    lcd.print("Alarm is no longer muted!");
+    lcd.print("unmuted!");
     soundPing();
   }
-  else {
-    lcd.print("Alarm is now muted!");
-  }
+  else
+    lcd.print("muted!");
   screenState = "alarm";
   lastUpdate = millis();
 }
@@ -88,10 +90,12 @@ void switchLogging() {
   loggingEnabled = !loggingEnabled;
   lcd.clear();
   lcd.setCursor(0,1);
+  lcd.print("Logging is now");
+  lcd.setCursor(0,2);
   if (loggingEnabled)
-    lcd.print("Logging is now enabled!");
+    lcd.print("enabled!");
   else
-    lcd.print("Logging is now disabled!");
+    lcd.print("disabled!");
   screenState = "log";
   lastUpdate = millis();
 }
@@ -324,11 +328,12 @@ void setup() {
 
   // set up the LCD's number of columns and rows:
   lcd.begin(20, 4);
-  lcd.cursor();
+  lcd.noCursor();
   lcd.noBlink();
   lcd.setCursor(0,1);
   lcd.print("Booting up...");
 
+  //Initialze the SD-card. If it fails, disable logging
   if(!SD.begin(5)){
     Serial.println("Card Mount Failed. Logging disabled");
     loggingEnabled = false;
@@ -377,6 +382,7 @@ void loop() {
   if (!connected)
     return;
 
+  // Fill the audiobuffer every loop, so sound continues to play
   DacAudio.FillBuffer();
   
   //if new temperature readings are available, write to Serial

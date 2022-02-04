@@ -106,7 +106,7 @@ void displaySensorData(String datatype) {
   if (datatype == "temp") {
     lcd.print("The temperature is:");
     lcd.setCursor(0,2);
-    lcd.print(" " + temperatureStr + " C"); 
+    lcd.print(" " + temperatureStr + (char)(223) + "C"); 
   }
   else if (datatype == "hum") {
     lcd.print("The humidity is:");
@@ -345,7 +345,10 @@ void setup() {
     Serial.println("No SD card attached. Logging disabled");
    loggingEnabled = false;
   }
-  
+
+  lcd.clear();
+  lcd.setCursor(0,1);
+  lcd.print("Connecting...");
   Serial.println("Starting Arduino BLE Client application...");
 
   //Init BLE device

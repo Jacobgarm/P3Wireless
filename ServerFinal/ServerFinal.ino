@@ -15,7 +15,6 @@
 #define DHTTYPE DHT22   // DHT 22  (AM2302)
 
 DHT dht(DHTPIN, DHTTYPE);
-int R_0 = 945;
 
 #define MQPIN 14
 

@@ -431,9 +431,7 @@ void loop() {
 
 
   for (int i = 0; i < 5; i++) {
-    int val = digitalRead(buttonPins[i]);
-    Serial.print(val);
-    Serial.print(" ");
+    int val = digitalRead(buttonPins[i]);*
     if (millis() - lastPressed[i] > buttonInterval && val == true && lastValues[i] == 1) {
         lastPressed[i] = millis();
         if (i == 0)
@@ -449,5 +447,4 @@ void loop() {
       }
       lastValues[i] = val;
   }
-  Serial.println();
 }

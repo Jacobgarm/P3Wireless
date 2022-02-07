@@ -431,19 +431,26 @@ void loop() {
 
 
   for (int i = 0; i < 5; i++) {
-    int val = digitalRead(buttonPins[i]);*
+    int val = digitalRead(buttonPins[i]);
     if (millis() - lastPressed[i] > buttonInterval && val == true && lastValues[i] == 1) {
         lastPressed[i] = millis();
-        if (i == 0)
-          displaySensorData("temp");
-        else if (i == 1)
-          displaySensorData("hum");
-        else if (i == 2)
-          displaySensorData("aq");
-        else if (i == 3)
-          switchLogging();
-        else if (i == 4)
-          switchAlarm();
+        switch (i) {
+          case 0:
+            displaySensorData("temp");
+            break;
+          case 1:
+            displaySensorData("hum");
+            break;
+          case 2:
+            displaySensorData("aq");
+            break;
+          case 3:
+            switchLogging();
+            break;
+          case 4:
+            switchAlarm();
+            break;
+        }
       }
       lastValues[i] = val;
   }
